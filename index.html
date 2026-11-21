@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pece3D — Calculadora de Preço para Impressão 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root{--accent:#ff7a1a;--accent-d:#a53c06;--c0:#e8590c;--c1:#f59f00;--c2:#2f9e44;--c3:#1c7ed6;--c4:#7048e8;--c5:#d6336c;--c6:#0c8599;--c7:#868e96;--c8:#a61e4d;--c9:#2b8a3e;
+  --mono:'Share Tech Mono',ui-monospace,'SF Mono',Menlo,monospace}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;min-height:100vh;color:#f1efe9;font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:radial-gradient(1200px 700px at 50% -10%,#3b404c,#121418)}
+.device{max-width:1120px;margin:18px auto;background:linear-gradient(#2c2f37,#1f2227);border:1px solid #3d424c;border-radius:30px;padding:14px;box-shadow:0 40px 80px #000a,inset 0 2px 0 #ffffff1c,inset 0 -4px 0 #0007}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:6px 8px 14px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand svg{width:38px;height:38px;flex:none;filter:drop-shadow(0 3px 0 #0006)}
+.brand h1{margin:0;font-size:1.7rem;letter-spacing:-.03em;line-height:1}
+.brand h1 b{color:var(--accent)}
+.brand p{margin:2px 0 0;font-size:.78rem;color:#a29e95}
+.solar{flex:none;width:130px;height:34px;border-radius:8px;border:2px solid #0b0c0e;background:repeating-linear-gradient(90deg,#2a2146 0 24px,#0b0c0e 24px 26px),linear-gradient(#3a2f63,#1d1733);background-blend-mode:normal;box-shadow:inset 0 2px 4px #000a,0 1px 0 #ffffff1c;display:flex;align-items:center;justify-content:center;color:#6f66a3;font:700 .6rem var(--mono);letter-spacing:.2em}
+@media(max-width:600px){.solar{display:none}.device{margin:0;border-radius:0;border-width:0;padding:8px}.brand h1{font-size:1.4rem}}
+.wrap{display:grid;gap:14px;grid-template-columns:1fr}
+.side{display:contents}
+#lcd{order:0;position:sticky;top:0;z-index:20}
+#form{order:1}
+#tape{order:2}
+@media(min-width:900px){
+  .wrap{grid-template-columns:1fr 410px;align-items:start}
+  .side{display:block;position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto;scrollbar-width:none;order:2}
+  .side::-webkit-scrollbar{display:none}
+  #lcd{position:static}
+  #form{order:1}
+}
+/* ---- Painéis (teclado) ---- */
+.card{background:#2a2d35;border:1px solid #3b3f49;border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:inset 0 1px 0 #ffffff12,0 6px 14px #0004}
+.card h2{margin:0 0 2px;font-size:1.02rem;display:flex;gap:10px;align-items:center;color:#fff}
+.card h2 .n{background:var(--accent);color:#1a0d02;border-radius:9px;width:28px;height:28px;display:inline-grid;place-items:center;font:700 .95rem var(--mono);box-shadow:0 3px 0 var(--accent-d)}
+.card .sub{color:#a29e95;font-size:.84rem;margin:2px 0 14px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.f{display:flex;flex-direction:column;gap:4px;min-width:0}
+.f.full{grid-column:1/-1}
+.f label{font-size:.8rem;font-weight:600;color:#dad6cc}
+.in{display:flex;align-items:center;background:#121418;border:1px solid #000;border-radius:10px;box-shadow:inset 0 3px 6px #000b,0 1px 0 #ffffff14;overflow:hidden}
+.in:focus-within{box-shadow:inset 0 3px 6px #000b,0 0 0 2px var(--accent)}
+.in span{padding:0 9px;color:#8d897f;font:.85rem var(--mono);white-space:nowrap}
+.in input,.rows input{flex:1;min-width:0;border:0;background:transparent;color:#ffd2a6;font:1.1rem var(--mono);padding:11px 8px;outline:none;text-align:right}
+.in span:first-child{padding-right:0}
+.in span:last-child:not(:first-child){padding-left:0}
+.hint{font-size:.74rem;color:#8d897f}
+.rows .row{display:grid;grid-template-columns:1.4fr 1fr 1fr 36px;gap:6px;margin-bottom:8px;align-items:center}
+.rows.ex .row{grid-template-columns:1.6fr 1fr 36px}
+.rows .row input{width:100%;background:#121418;border:1px solid #000;border-radius:10px;box-shadow:inset 0 3px 6px #000b;padding:10px 8px;font-size:1rem}
+.rows .row input[data-f=n]{text-align:left;font-family:system-ui,sans-serif;color:#f1efe9}
+.rows .hd{display:grid;grid-template-columns:1.4fr 1fr 1fr 36px;gap:6px;font-size:.72rem;color:#8d897f;margin-bottom:4px}
+.rows.ex .hd{grid-template-columns:1.6fr 1fr 36px}
+.key,.add,.x,.seg button{font:inherit;cursor:pointer;border:0;color:#f1efe9;background:#3d414b;border-radius:10px;box-shadow:0 4px 0 #14161a,inset 0 1px 0 #ffffff22;transition:transform .05s,box-shadow .05s}
+.key:active,.add:active,.x:active,.seg button:active{transform:translateY(3px);box-shadow:0 1px 0 #14161a,inset 0 1px 0 #ffffff22}
+.x{width:34px;height:34px;color:#ff8f8f;font-size:1.2rem;line-height:1}
+.add{width:100%;padding:11px 12px;font-weight:700;color:#ffb27a;margin-bottom:6px}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding-bottom:4px}
+.seg button{padding:12px 8px;font-weight:600;font-size:.9rem}
+.seg button.on{background:var(--accent);color:#1a0d02;font-weight:800;box-shadow:0 4px 0 var(--accent-d),inset 0 1px 0 #ffffff55}
+.seg button.on:active{box-shadow:0 1px 0 var(--accent-d)}
+.chk{display:flex;gap:10px;align-items:center;font-size:.9rem;color:#dad6cc}
+.chk input{width:20px;height:20px;accent-color:var(--accent)}
+/* ---- Visor LCD ---- */
+.lcdWrap{background:#101216;border:1px solid #000;border-radius:20px;padding:10px;box-shadow:inset 0 2px 6px #000,0 1px 0 #ffffff1c,0 10px 24px #0007}
+.lcd{background:linear-gradient(#cbd9b4,#b1c398);color:#1c2a12;border-radius:12px;padding:10px 16px 12px;box-shadow:inset 0 4px 10px #0007,inset 0 -2px 0 #ffffff40;font-family:var(--mono);position:relative;overflow:hidden}
+.lcd:before{content:"";position:absolute;inset:0;background:linear-gradient(120deg,#ffffff38 0,#ffffff00 40%);pointer-events:none}
+.ind{display:flex;gap:12px;font-size:.66rem;letter-spacing:.1em;opacity:.9}
+.ind span{opacity:.28}.ind span.on{opacity:1;font-weight:700}.ind span.neg{color:#8a1c1c}
+.digits{font-size:clamp(2.1rem,10vw,3.5rem);text-align:right;line-height:1.15;white-space:nowrap;text-shadow:2px 2px 0 #0000001a;letter-spacing:.02em;position:relative}
+.sub3{display:flex;justify-content:space-between;gap:4px 12px;flex-wrap:wrap;font-size:.76rem;margin-top:2px}
+.sub3 .neg{color:#8a1c1c;font-weight:700}
+.warn{background:#fff3bf;color:#5c4400;border-radius:10px;padding:9px 11px;font-size:.82rem;margin-top:8px;font-family:system-ui,sans-serif}
+@media(max-width:600px){.lcdWrap{border-radius:14px;padding:7px}.digits{font-size:clamp(1.8rem,9vw,2.4rem)}.sub3{font-size:.7rem}}
+/* ---- Fita de papel ---- */
+.tape{margin:16px 6px 16px;background:#fdfcf7;color:#232323;font-family:var(--mono);padding:18px 16px 14px;border-radius:6px 6px 0 0;position:relative;box-shadow:0 10px 22px #0007;background-image:repeating-linear-gradient(transparent 0 27px,#0000000a 27px 28px)}
+.tape:after{content:"";position:absolute;left:0;right:0;bottom:-10px;height:10px;background:linear-gradient(135deg,#fdfcf7 5px,transparent 0),linear-gradient(-135deg,#fdfcf7 5px,transparent 0);background-size:10px 10px}
+.tape h3{margin:0;text-align:center;font-size:1rem;letter-spacing:.14em}
+.tape .dt{text-align:center;font-size:.72rem;color:#777;margin:2px 0 10px}
+.tape h4{margin:14px 0 4px;font-size:.78rem;letter-spacing:.12em;color:#555}
+.stack{display:flex;height:14px;border-radius:3px;overflow:hidden;margin:8px 0 10px;background:#ddd;border:1px solid #bbb}
+.stack i{display:block;height:100%}
+table{width:100%;border-collapse:collapse;font-size:.88rem}
+td{padding:5px 0;border-bottom:1px dashed #c9c5b8}
+td:nth-child(2){text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+td:nth-child(3){text-align:right;color:#777;width:50px;font-size:.76rem}
+td .dot{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:7px}
+tr.tot td{font-weight:700;border-bottom:0;border-top:2px solid #232323;padding-top:8px;font-size:1rem}
+.keys{display:grid;grid-template-columns:1fr 2fr;gap:12px;margin-top:16px;font-family:system-ui,sans-serif}
+.key{padding:13px 10px;font-weight:800;font-size:.95rem}
+.key.red{background:#d9480f;color:#fff;box-shadow:0 4px 0 #8f2f06,inset 0 1px 0 #ffffff44}
+.key.eq{background:var(--accent);color:#1a0d02;box-shadow:0 4px 0 var(--accent-d),inset 0 1px 0 #ffffff55}
+textarea{width:100%;margin-top:10px;border:1px solid #bbb;border-radius:6px;background:#fff;color:#222;font:12px/1.4 var(--mono);padding:8px;min-height:150px}
+footer{padding:14px 10px 6px;color:#8d897f;font-size:.76rem}
+</style>
+</head>
+<body>
+<div class="device">
+  <div class="top">
+    <div class="brand"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4 42 14v20L24 44 6 34V14z" fill="#ff7a1a"/><path d="M24 4 42 14 24 24 6 14z" fill="#ffb36b"/><path d="M24 24v20L6 34V14z" fill="#d9560a"/><path d="M24 24 42 14v20L24 44z" fill="#ff6a00"/><path d="M6 14 24 24 42 14" fill="none" stroke="#1a0d02" stroke-opacity=".25" stroke-width="1.5"/></svg><div><h1>Pece<b>3D</b></h1><p>Calculadora de preço para impressão 3D</p></div></div>
+    <div class="solar">PC-3D</div>
+  </div>
+  <div class="wrap">
+    <div id="form"></div>
+    <aside class="side"><div id="lcd"></div><div id="tape"></div></aside>
+  </div>
+  <footer>Os valores iniciais são exemplos: troque pelos seus. Seus dados ficam salvos neste navegador (quando permitido). Falhas entram como custo esperado: custo ÷ (1 − taxa de falha). O preço final é ajustado para que impostos, taxas e lucro saiam exatamente do valor de venda.</footer>
+</div>
+
+<script>
+const brl=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
+const R=v=>brl.format(isFinite(v)?v:0);
+const P=v=>(isFinite(v)?v:0).toLocaleString('pt-BR',{maximumFractionDigits:1})+'%';
+const num=v=>{v=String(v==null?'':v).trim();if(!v)return 0;if(v.includes(','))v=v.replace(/\./g,'').replace(',','.');const n=parseFloat(v);return isFinite(n)?n:0};
+const $=id=>document.getElementById(id);
+const KEY='calc3d_v1';
+
+const DEFAULTS={
+  fil:[{n:'PLA',p:100,g:50}],
+  ex:[{n:'Embalagem',v:1.5}],
+  v:{qty:1,h:3,m:0,waste:3,watts:150,tarifa:0.95,maq:2500,resid:0,vida:4000,manut:0.3,
+     mohora:20,prep:10,pos:10,fixo:150,horasMes:200,falha:5,modo:'margem',alvo:40,imp:6,taxa:0,taxaFixa:0,arred:true}
+};
+let S=JSON.parse(JSON.stringify(DEFAULTS));
+try{const s=localStorage.getItem(KEY);if(s){const o=JSON.parse(s);if(o&&o.v){S={fil:o.fil||S.fil,ex:o.ex||S.ex,v:Object.assign({},S.v,o.v)}}}}catch(e){}
+
+const SECTIONS=[
+ {t:'Peça e tempo de impressão',s:'Use os dados do fatiador (Cura, Bambu Studio, PrusaSlicer…) para a mesa inteira.',f:[
+  ['qty','Peças na mesa','','un','Quantas peças saem nesta impressão'],
+  ['h','Tempo — horas','','h',''],['m','Tempo — minutos','','min','']]},
+ {t:'Filamento',s:'Some o peso de peça + suportes + brim + purga/torre (o fatiador informa).',custom:'fil',f:[
+  ['waste','Desperdício extra','','%','Fio que sobra no carretel, troca de cor, etc.']]},
+ {t:'Energia elétrica',s:'Consumo médio da impressora durante a impressão.',f:[
+  ['watts','Potência média','','W','Típico: 80–200 W (com mesa aquecida). Meça com um wattímetro para exatidão.'],
+  ['tarifa','Tarifa de energia','R$','/kWh','Valor total do kWh na sua conta, com impostos e bandeira.']]},
+ {t:'Desgaste da máquina',s:'A impressora perde valor e precisa de bicos, mesa, correias, lubrificação.',f:[
+  ['maq','Preço da impressora','R$','',''],['resid','Valor de revenda','R$','','Quanto vale no fim da vida útil'],
+  ['vida','Vida útil estimada','','h','Horas de impressão até trocar'],['manut','Manutenção e peças','R$','/h','Bicos, mesa, correias…']]},
+ {t:'Mão de obra',s:'Seu tempo também é custo. Se não quiser cobrar, zere o valor/hora.',f:[
+  ['mohora','Valor da sua hora','R$','/h',''],
+  ['prep','Preparo (por mesa)','','min','Modelagem, fatiamento, abrir/limpar mesa'],
+  ['pos','Pós-processo (por peça)','','min','Remover suporte, lixar, pintar, montar']]},
+ {t:'Custos fixos do negócio',s:'Internet, aluguel, software, contador, ferramentas… rateados por hora de impressão.',f:[
+  ['fixo','Custos fixos por mês','R$','',''],['horasMes','Horas impressas por mês','','h','Quanto suas máquinas realmente imprimem']]},
+ {t:'Materiais extras por peça',s:'Embalagem, tinta, cola, parafusos, ímãs, etiqueta…',custom:'ex',f:[]},
+ {t:'Falhas de impressão',s:'Peças que dão errado e são jogadas fora.',f:[
+  ['falha','Taxa de falha','','%','Ex.: 5% = 1 a cada 20 impressões falha']]},
+ {t:'Venda, impostos e lucro',s:'Define o preço final.',custom:'venda',f:[
+  ['imp','Imposto sobre a venda','','%','Simples Nacional, etc. (0 se MEI)'],
+  ['taxa','Taxa da plataforma/pagamento','','%','Marketplace, cartão, Pix…'],
+  ['taxaFixa','Taxa fixa por venda','R$','','Ex.: tarifa fixa do marketplace']]}
+];
+
+function fieldHTML(f){
+  const [id,l,pre,suf,hint]=f;
+  return `<div class="f"><label for="${id}">${l}</label><div class="in">${pre?`<span>${pre}</span>`:''}<input id="${id}" data-k="${id}" inputmode="decimal" autocomplete="off" value="${String(S.v[id]).replace('.',',')}">${suf?`<span>${suf}</span>`:''}</div>${hint?`<div class="hint">${hint}</div>`:''}</div>`;
+}
+function build(){
+  let h='';
+  SECTIONS.forEach((s,i)=>{
+    h+=`<section class="card"><h2><span class="n">${i+1}</span>${s.t}</h2><p class="sub">${s.s}</p>`;
+    if(s.custom==='fil'){
+      h+=`<div class="rows"><div class="hd"><span>Filamento</span><span>Preço/kg (R$)</span><span>Gramas usadas</span><span></span></div><div id="filRows"></div></div><button class="add" data-add="fil">+ Adicionar filamento (multicor)</button><div style="height:12px"></div>`;
+    }
+    if(s.custom==='ex'){
+      h+=`<div class="rows ex"><div class="hd"><span>Item</span><span>Valor por peça (R$)</span><span></span></div><div id="exRows"></div></div><button class="add" data-add="ex">+ Adicionar item</button>`;
+    }
+    if(s.custom==='venda'){
+      h+=`<div class="f full" style="margin-bottom:10px"><label>Como definir o lucro?</label><div class="seg" id="modo"><button data-m="margem">Margem sobre o preço</button><button data-m="markup">Markup sobre o custo</button></div><div class="hint" id="modoHint"></div></div>
+      <div class="grid" style="margin-bottom:10px"><div class="f full"><label for="alvo" id="alvoL">Lucro desejado</label><div class="in"><input id="alvo" data-k="alvo" inputmode="decimal" value="${String(S.v.alvo).replace('.',',')}"><span>%</span></div></div></div>`;
+    }
+    if(s.f.length)h+=`<div class="grid">${s.f.map(fieldHTML).join('')}</div>`;
+    if(s.custom==='venda')h+=`<div class="chk" style="margin-top:12px"><input type="checkbox" id="arred" ${S.v.arred?'checked':''}><label for="arred">Arredondar preço para terminar em ,90</label></div>`;
+    h+='</section>';
+  });
+  $('form').innerHTML=h;
+  renderRows();
+  document.querySelectorAll('#form [data-k]').forEach(e=>e.addEventListener('input',()=>{S.v[e.dataset.k]=num(e.value);calc()}));
+  $('arred').addEventListener('change',e=>{S.v.arred=e.target.checked;calc()});
+  document.querySelectorAll('#modo button').forEach(b=>b.addEventListener('click',()=>{S.v.modo=b.dataset.m;calc()}));
+  document.querySelectorAll('[data-add]').forEach(b=>b.addEventListener('click',()=>{
+    if(b.dataset.add==='fil')S.fil.push({n:'Filamento',p:100,g:0});else S.ex.push({n:'Item',v:0});
+    renderRows();calc();}));
+}
+function renderRows(){
+  $('filRows').innerHTML=S.fil.map((r,i)=>`<div class="row"><input data-r="fil" data-i="${i}" data-f="n" value="${esc(r.n)}" aria-label="Nome"><input data-r="fil" data-i="${i}" data-f="p" inputmode="decimal" value="${String(r.p).replace('.',',')}" aria-label="Preço por kg"><input data-r="fil" data-i="${i}" data-f="g" inputmode="decimal" value="${String(r.g).replace('.',',')}" aria-label="Gramas"><button class="x" data-del="fil" data-i="${i}" aria-label="Remover">×</button></div>`).join('');
+  $('exRows').innerHTML=S.ex.map((r,i)=>`<div class="row"><input data-r="ex" data-i="${i}" data-f="n" value="${esc(r.n)}" aria-label="Item"><input data-r="ex" data-i="${i}" data-f="v" inputmode="decimal" value="${String(r.v).replace('.',',')}" aria-label="Valor"><button class="x" data-del="ex" data-i="${i}" aria-label="Remover">×</button></div>`).join('');
+  document.querySelectorAll('[data-r]').forEach(e=>e.addEventListener('input',()=>{
+    const r=S[e.dataset.r][+e.dataset.i];r[e.dataset.f]=e.dataset.f==='n'?e.value:num(e.value);calc();}));
+  document.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{S[b.dataset.del].splice(+b.dataset.i,1);renderRows();calc();}));
+}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}
+
+let last=null;
+function calc(){
+  const v=S.v,q=Math.max(1,Math.round(v.qty)||1);
+  const hours=v.h+v.m/60;
+  // Custos de produção da mesa inteira
+  const filBase=S.fil.reduce((a,r)=>a+r.g/1000*r.p,0);
+  const fil=filBase*(1+v.waste/100);
+  const energia=v.watts/1000*hours*v.tarifa;
+  const depH=v.vida>0?Math.max(0,v.maq-v.resid)/v.vida:0;
+  const maq=hours*(depH+v.manut);
+  const fixoH=v.horasMes>0?v.fixo/v.horasMes:0;
+  const fixos=hours*fixoH;
+  const f=Math.min(v.falha/100,0.95);
+  const baseProd=fil+energia+maq;
+  const falhas=baseProd*f/(1-f);
+  const mo=v.prep/60*v.mohora+q*v.pos/60*v.mohora;
+  const extras=q*S.ex.reduce((a,r)=>a+r.v,0);
+  const lote=fil+energia+maq+falhas+fixos+mo+extras;
+  const custo=lote/q;
+  const un={fil:fil/q,energia:energia/q,maq:maq/q,falhas:falhas/q,fixos:fixos/q,mo:mo/q,extras:extras/q};
+
+  const pct=(v.imp+v.taxa)/100,alvo=v.alvo/100;
+  let preco,den,erro='';
+  if(v.modo==='margem'){den=1-pct-alvo;preco=den>0?(custo+v.taxaFixa)/den:NaN}
+  else{den=1-pct;preco=den>0?(custo*(1+alvo)+v.taxaFixa)/den:NaN}
+  if(!(den>0)){erro='Impostos + taxas + margem somam 100% ou mais: não existe preço que feche a conta. Reduza algum desses percentuais.';preco=0}
+  if(v.arred&&preco>0){let r=Math.floor(preco)+0.90;if(r<preco)r+=1;preco=r}
+  const minimo=(1-pct)>0?(custo+v.taxaFixa)/(1-pct):0;
+  const imposto=preco*v.imp/100,plat=preco*v.taxa/100+(preco>0?v.taxaFixa:0);
+  const lucro=preco-custo-imposto-plat;
+  const liquido=preco-imposto-plat;
+  const seg=[
+    ['Filamento',un.fil],['Energia',un.energia],['Desgaste da máquina',un.maq],['Mão de obra',un.mo],
+    ['Custos fixos',un.fixos],['Materiais extras',un.extras],['Falhas',un.falhas],
+    ['Impostos',imposto],['Taxas de venda',plat],['Lucro',Math.max(0,lucro)]
+  ];
+  last={q,hours,custo,preco,lucro,lote,minimo,seg,liquido,un,imposto,plat,v};
+  render();
+  try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
+  // UI do modo
+  document.querySelectorAll('#modo button').forEach(b=>b.classList.toggle('on',b.dataset.m===v.modo));
+  $('alvoL').textContent=v.modo==='margem'?'Margem de lucro desejada (sobre o preço de venda)':'Markup desejado (sobre o custo)';
+  $('modoHint').textContent=v.modo==='margem'?'Margem 40% = o lucro é 40% do preço final.':'Markup 100% = vender pelo dobro do custo (antes de impostos e taxas).';
+  if(erro)$('lcd').querySelector('.lcd').insertAdjacentHTML('beforeend',`<div class="warn">${erro}</div>`);
+}
+function render(){
+  const L=last,tot=L.preco||1,neg=L.lucro<0;
+  const rows=L.seg.map((s,i)=>`<tr><td><span class="dot" style="background:var(--c${i})"></span>${s[0]}</td><td>${R(s[1])}</td><td>${P(s[1]/tot*100)}</td></tr>`).join('');
+  const bar=L.seg.map((s,i)=>s[1]>0?`<i style="width:${s[1]/tot*100}%;background:var(--c${i})" title="${s[0]}"></i>`:'').join('');
+  const hh=Math.floor(L.hours),mm=String(Math.round((L.hours%1)*60)).padStart(2,'0');
+  $('lcd').innerHTML=`<div class="lcdWrap"><div class="lcd">
+    <div class="ind"><span class="on">PREÇO / PEÇA</span><span class="on">${L.v.modo==='margem'?'MARGEM':'MARKUP'}</span><span class="on ${neg?'neg':''}">${neg?'PREJUÍZO':'LUCRO'}</span></div>
+    <div class="digits">${R(L.preco)}</div>
+    <div class="sub3"><span>CUSTO ${R(L.custo)}</span><span class="${neg?'neg':''}">LUCRO ${R(L.lucro)}</span><span>MARG ${P(L.preco?L.lucro/L.preco*100:0)}</span></div>
+  </div></div>`;
+  $('tape').innerHTML=`<div class="tape">
+    <h3>PECE3D</h3><div class="dt">FITA DE CÁLCULO · ${new Date().toLocaleDateString('pt-BR')}</div>
+    <h4>COMPOSIÇÃO DO PREÇO (1 PEÇA)</h4>
+    <div class="stack">${bar}</div>
+    <table>${rows}<tr class="tot"><td>PREÇO DE VENDA</td><td>${R(L.preco)}</td><td>100%</td></tr></table>
+    <h4>MESA: ${L.q} PEÇA(S) · ${hh}h${mm}</h4>
+    <table>
+      <tr><td>Custo total da mesa</td><td>${R(L.lote)}</td><td></td></tr>
+      <tr><td>Faturamento</td><td>${R(L.preco*L.q)}</td><td></td></tr>
+      <tr><td>Lucro da mesa</td><td>${R(L.lucro*L.q)}</td><td></td></tr>
+      <tr><td>Lucro por hora de máquina</td><td>${R(L.hours?L.lucro*L.q/L.hours:0)}</td><td></td></tr>
+      <tr><td>Preço mínimo (lucro zero)</td><td>${R(L.minimo)}</td><td></td></tr>
+    </table>
+    <div class="keys"><button class="key red" id="kC" title="Restaurar valores de exemplo">C</button><button class="key eq" id="kEq">= Copiar resumo</button></div>
+    <div id="copyOut"></div>
+  </div>`;
+  $('kEq').addEventListener('click',copy);
+  $('kC').addEventListener('click',resetAll);
+}
+function resetAll(){S=JSON.parse(JSON.stringify(DEFAULTS));build();calc();window.scrollTo({top:0,behavior:'smooth'})}
+function copy(){
+  const L=last;
+  const t=['PECE3D — ORÇAMENTO DE IMPRESSÃO 3D','',
+   ...L.seg.map(s=>`${s[0]}: ${R(s[1])}`),'',
+   `Custo por peça: ${R(L.custo)}`,`Preço de venda por peça: ${R(L.preco)}`,
+   `Quantidade: ${L.q} → Total: ${R(L.preco*L.q)}`].join('\n');
+  const out=$('copyOut'),btn=$('kEq');
+  const fallback=()=>{out.innerHTML=`<textarea readonly>${esc(t)}</textarea>`};
+  try{navigator.clipboard.writeText(t).then(()=>{btn.textContent='Copiado ✓';setTimeout(()=>{const b=$('kEq');if(b)b.textContent='= Copiar resumo'},1800)}).catch(fallback)}catch(e){fallback()}
+}
+build();calc();
+</script>
+</body>
+</html>
